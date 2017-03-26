@@ -12,9 +12,9 @@ namespace ksr {
         constexpr auto underlying_type_ext(meta::tag<t>) {
 
             if constexpr (std::is_enum_v<t>) {
-                return tag<std::underlying_type_t<t>>{};
+                return meta::tag<std::underlying_type_t<t>>{};
             } else {
-                return tag<std::remove_cv_t<t>>{};
+                return meta::tag<std::remove_cv_t<t>>{};
             }
         }
     }

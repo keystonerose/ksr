@@ -39,7 +39,7 @@ namespace ksr::meta {
     /// in both cases.
     ///
 
-    template <typename ts...>
+    template <typename... ts>
     struct type_seq;
 
     template <>

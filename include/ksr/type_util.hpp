@@ -18,7 +18,7 @@ namespace ksr {
         template <typename t>
         constexpr auto is_negative(const t value) -> std::enable_if_t<is_numeric_v<t>, bool> {
             using underlying_t = underlying_type_ext_t<t>;
-            return static_cast<underlying_type_t>(value) < underlying_t{};
+            return static_cast<underlying_t>(value) < underlying_t{};
         }
     }
 
