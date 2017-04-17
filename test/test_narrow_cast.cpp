@@ -1,4 +1,3 @@
-#define KSR_THROW_ON_ASSERT
 #include "ksr/type_util.hpp"
 
 #include "catch/catch.hpp"

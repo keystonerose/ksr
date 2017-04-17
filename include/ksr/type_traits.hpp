@@ -6,6 +6,21 @@
 
 namespace ksr {
 
+    ///
+    /// Determines whether a constructor declared equivalently to
+    /// template <typename arg_t> t(arg_t&&)
+    /// would match the copy or move constructor of t for a specific instantiation by \p arg_t. May
+    /// be used with \c std::enable_if to ensure that universal constructors do are not instantiated
+    /// when they may interfere with these special constructors.
+    ///
+
+    template <typename t, typename arg_t>
+    struct matches_special_ctr : std::bool_constant<
+        std::is_base_of_v<t, std::decay_t<arg_t>>> {};
+
+    template <typename t, typename arg_t>
+    inline constexpr auto matches_special_ctr_v = matches_special_ctr<t, arg_t>::value;
+
     namespace detail {
 
         template <typename t>

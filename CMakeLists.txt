@@ -9,3 +9,4 @@ include_directories(SYSTEM ${3RDPARTY_DIR})
 
 add_subdirectory(test)
 add_executable(ksr_test ${KSR_TEST_SRCS})
+target_compile_definitions(ksr_test PRIVATE KSR_THROW_ON_ASSERT)
