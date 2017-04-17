@@ -3,7 +3,7 @@
 
 #include <type_traits>
 
-namespace ksr::meta {
+namespace ksr { namespace meta {
 
     ///
     /// Wraps a single type \p t in an object that can be passed to or returned from \c constexpr
@@ -90,6 +90,6 @@ namespace ksr::meta {
             return less(ordering.tail, lhs, rhs);
         }
     }
-}
+}}
 
 #endif
