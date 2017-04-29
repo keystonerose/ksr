@@ -30,8 +30,8 @@ namespace ksr {
     /// machine code; in debug builds, it raises an error via \c KSR_ASSERT when \p input is not
     /// representable by \p output_t.
     ///
-    /// This is an adaptation of the functionality provided by <tt>gsl::narrow()</tt>, but extends
-    /// that functionality to also cover enumeration types and, in providing identical behaviour to
+    /// This is an adaptation of the functionality provided by `gsl::narrow()`, but extends that
+    /// functionality to also cover enumeration types and, in providing identical behaviour to
     /// \c static_cast for release builds, facilitates more extensive use.
     ///
 
