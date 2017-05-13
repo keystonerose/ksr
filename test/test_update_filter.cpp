@@ -5,12 +5,13 @@
 #include <chrono>
 #include <thread>
 
+using namespace ksr;
 using namespace std::literals::chrono_literals;
 
 TEST_CASE("int_percentage_count", "[update_filter]") {
 
     auto update_count = 0;
-    auto filter = ksr::int_percentage_filter<int>{[&](int, int) {
+    auto filter = int_percentage_filter<int>{[&](int, int) {
         ++update_count;
     }};
 
@@ -20,17 +21,17 @@ TEST_CASE("int_percentage_count", "[update_filter]") {
     }
 
     CHECK(update_count == 101);
-    CHECK(ksr::int_percentage(filter) == 100);
+    CHECK(int_percentage(filter) == 100);
 
     filter.sync(max, max);
     CHECK(update_count == 102);
-    CHECK(ksr::int_percentage(filter) == 100);
+    CHECK(int_percentage(filter) == 100);
 }
 
 TEST_CASE("double_percentage_count", "[update_filter]") {
 
     auto update_count = 0;
-    auto filter = ksr::int_percentage_filter<double>{[&](double, double) {
+    auto filter = int_percentage_filter<double>{[&](double, double) {
         ++update_count;
     }};
 
@@ -40,17 +41,17 @@ TEST_CASE("double_percentage_count", "[update_filter]") {
     }
 
     CHECK(update_count == 101);
-    CHECK(ksr::int_percentage(filter) == 100);
+    CHECK(int_percentage(filter) == 100);
 
     filter.sync(max, max);
     CHECK(update_count == 102);
-    CHECK(ksr::int_percentage(filter) == 100);
+    CHECK(int_percentage(filter) == 100);
 }
 
 TEST_CASE("sample_count", "[update_filter]") {
 
     auto update_count = 0;
-    auto filter = ksr::sampled_filter<int>{20ms, [&](int) {
+    auto filter = sampled_filter<int>{20ms, [&](int) {
         ++update_count;
     }};
 
@@ -74,7 +75,7 @@ TEST_CASE("sample_period", "[update_filter]") {
 
     auto update_count = 0;
     auto value = 0;
-    auto filter = ksr::sampled_filter<int>{sample_period, [&](const int new_value) {
+    auto filter = sampled_filter<int>{sample_period, [&](const int new_value) {
         ++update_count;
         value = new_value;
     }};

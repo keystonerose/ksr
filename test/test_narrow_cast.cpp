@@ -6,6 +6,8 @@
 #include <limits>
 #include <type_traits>
 
+using namespace ksr;
+
 namespace {
 
     template <typename T>
@@ -34,9 +36,9 @@ namespace {
     auto can_cast(const input_t input) -> bool {
 
         try {
-            const auto output = ksr::narrow_cast<output_t>(input);
+            const auto output = narrow_cast<output_t>(input);
             return output == static_cast<output_t>(input);
-        } catch (const ksr::logic_error&) {
+        } catch (const logic_error&) {
             return false;
         }
     }

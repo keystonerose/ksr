@@ -2,6 +2,8 @@
 #define KSR_TYPE_TRAITS_HPP
 
 #include "meta.hpp"
+#include "meta_type_traits.hpp"
+
 #include <type_traits>
 
 namespace ksr {
@@ -24,12 +26,12 @@ namespace ksr {
     namespace detail {
 
         template <typename t>
-        constexpr auto underlying_type_ext(meta::tag<t>) {
+        constexpr auto underlying_type_ext(meta::type<t>) {
 
             if constexpr (std::is_enum_v<t>) {
-                return meta::tag<std::underlying_type_t<t>>{};
+                return meta::type<std::underlying_type_t<t>>{};
             } else {
-                return meta::tag<std::remove_cv_t<t>>{};
+                return meta::type<std::remove_cv_t<t>>{};
             }
         }
     }
@@ -42,7 +44,7 @@ namespace ksr {
     ///
 
     template <typename t>
-    using underlying_type_ext = decltype(detail::underlying_type_ext(meta::tag<t>{}));
+    using underlying_type_ext = decltype(detail::underlying_type_ext(meta::type<t>{}));
 
     template <typename t>
     using underlying_type_ext_t = typename underlying_type_ext<t>::type;
