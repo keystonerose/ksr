@@ -9,45 +9,45 @@ namespace ksr { namespace meta {
     ///
     /// Wraps a single type \p t in an object that can be passed to or returned from `constexpr`
     /// functions performing compile-time operations on types. The tagged type can be retrieved from
-    /// a \ref type object using `decltype` and the `type` member type. \ref type objects have no
-    /// state, but are considered identical when they represent the same type (in the sense of
-    /// `std::is_same`).
+    /// a \ref type_tag object using `decltype` and the `type` member type. \ref type_tag objects
+    /// have no state, but are considered identical when they represent the same type (in the sense
+    /// of `std::is_same`).
     ///
 
     template <typename t>
-    struct type {
+    struct type_tag {
         using type = t;
     };
 
     template <typename lhs_t, typename rhs_t>
-    constexpr auto operator==(type<lhs_t>, type<rhs_t>) -> bool {
+    constexpr auto operator==(type_tag<lhs_t>, type_tag<rhs_t>) -> bool {
         return std::is_same_v<lhs_t, rhs_t>;
     }
 
     template <typename lhs_t, typename rhs_t>
-    constexpr auto operator!=(const type<lhs_t> lhs, const type<rhs_t> rhs) -> bool {
+    constexpr auto operator!=(const type_tag<lhs_t> lhs, const type_tag<rhs_t> rhs) -> bool {
         return !(lhs == rhs);
     }
 
     ///
     /// Wraps an integral constant value \p v in an object that can be passed as an argument to
     /// functions to facilitate the deduction of a corresponding template parameter. The tagged
-    /// value can be retrieved via the `value` member. \ref value objects have no state, but are
+    /// value can be retrieved via the `value` member. \ref value_tag objects have no state, but are
     /// considered identical when the values they tag are equal.
     ///
 
     template <auto v>
-    struct value {
+    struct value_tag {
         static constexpr auto value = v;
     };
 
     template <auto lhs_v, auto rhs_v>
-    constexpr auto operator==(value<lhs_v>, value<rhs_v>) -> bool {
+    constexpr auto operator==(value_tag<lhs_v>, value_tag<rhs_v>) -> bool {
         return lhs_v == rhs_v;
     }
 
     template <auto lhs_v, auto rhs_v>
-    constexpr auto operator!=(const value<lhs_v> lhs, const value<rhs_v> rhs) -> bool {
+    constexpr auto operator!=(const value_tag<lhs_v> lhs, const value_tag<rhs_v> rhs) -> bool {
         return !(lhs == rhs);
     }
 
@@ -58,8 +58,8 @@ namespace ksr { namespace meta {
 
     ///
     /// Wraps a pack of arbitrary types and provides operations for processing that pack in terms of
-    /// (presumably \c constexpr) \ref type objects. \ref type_seq objects tagging a non-empty
-    /// \p ts pack are typically processed by splitting into a `head` (which is a \ref type
+    /// (presumably \c constexpr) \ref type_tag objects. \ref type_seq objects tagging a non-empty
+    /// \p ts pack are typically processed by splitting into a `head` (which is a \ref type_tag
     /// representing the first type in \p ts) and a `tail` (which is another \ref type_seq
     /// representing the following types in \p ts, and may be empty). These operations are available
     /// via the members of those names when \p ts is non-empty, but are not present when it is
@@ -78,17 +78,17 @@ namespace ksr { namespace meta {
     template <typename head_t, typename... tail_ts>
     struct type_seq<head_t, tail_ts...> {
         static constexpr auto empty = false;
-        static constexpr auto head = type<head_t>{};
+        static constexpr auto head = type_tag<head_t>{};
         static constexpr auto tail = type_seq<tail_ts...>{};
     };
 
     template <typename item_t, typename... seq_ts>
-    constexpr auto push_back(type_seq<seq_ts...>, type<item_t>) {
+    constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t>) {
         return type_seq<seq_ts..., item_t>{};
     }
 
     template <typename item_t, typename... seq_ts>
-    constexpr auto push_front(type_seq<seq_ts...>, type<item_t>) {
+    constexpr auto push_front(type_seq<seq_ts...>, type_tag<item_t>) {
         return type_seq<item_t, seq_ts...>{};
     }
 
@@ -105,17 +105,17 @@ namespace ksr { namespace meta {
     template <auto head_v, auto... tail_vs>
     struct value_seq<head_v, tail_vs...> {
         static constexpr auto empty = false;
-        static constexpr auto head = value<head_v>{};
+        static constexpr auto head = value_tag<head_v>{};
         static constexpr auto tail = value_seq<tail_vs...>{};
     };
 
     template <auto item_v, auto... seq_vs>
-    constexpr auto push_back(value_seq<seq_vs...>, value<item_v>) {
+    constexpr auto push_back(value_seq<seq_vs...>, value_tag<item_v> = {}) {
         return value_seq<seq_vs..., item_v>{};
     }
 
     template <auto item_v, auto... seq_vs>
-    constexpr auto push_front(value_seq<seq_vs...>, value<item_v>) {
+    constexpr auto push_front(value_seq<seq_vs...>, value_tag<item_v> = {}) {
         return value_seq<item_v, seq_vs...>{};
     }
 
@@ -131,8 +131,8 @@ namespace ksr { namespace meta {
         std::conjunction_v<is_type_inst<ts, type_seq>...> ||
         std::conjunction_v<is_value_inst<ts, value_seq>...>> {};
 
-    template <typename t>
-    inline constexpr auto is_seq_v = is_seq<t>::value;
+    template <typename... ts>
+    inline constexpr auto is_seq_v = is_seq<ts...>::value;
 
     // TODO:DOC
 
@@ -202,8 +202,8 @@ namespace ksr { namespace meta {
     ///
     /// Determines whether \p haystack contains the item \p needle at any position. \p seq_t must
     /// be a sequence in the sense of the \ref is_seq trait. If \p seq_t is a type sequence, then
-    /// \p item_t must be an instantiation of \ref type; if it is a value sequence, \p item_t must
-    /// be a type comparable to every item type in \p seq_t.
+    /// \p item_t must be an instantiation of \ref type_tag; if it is a value sequence, \p item_t
+    /// must be a type comparable to every item type in \p seq_t.
     ///
 
     template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
@@ -215,9 +215,9 @@ namespace ksr { namespace meta {
             if constexpr (rhs.empty) {
                 return false;
             } else if constexpr (rhs.head == lhs.head) {
-                return search(rhs.tail, lhs.tail);
+                return subseq(rhs.tail, lhs.tail);
             } else {
-                return search(rhs.tail, lhs);
+                return subseq(rhs.tail, lhs);
             }
         }
     }
@@ -225,13 +225,13 @@ namespace ksr { namespace meta {
     // TODO:DOC
 
     template <typename item_t, typename... seq_ts>
-    constexpr auto contains(const type_seq<seq_ts...> seq, type<item_t>) -> bool {
-        return subseq(seq, type_seq<item_t>{});
+    constexpr auto contains(const type_seq<seq_ts...> seq, type_tag<item_t> = {}) -> bool {
+        return subseq(type_seq<item_t>{}, seq);
     }
 
-    template <typename item_t, auto... seq_vs>
-    constexpr auto contains(const value_seq<seq_vs...> seq, const item_t item) -> bool {
-        return subseq(seq, value_seq<item>{});
+    template <auto item_v, auto... seq_vs>
+    constexpr auto contains(const value_seq<seq_vs...> seq, value_tag<item_v> = {}) -> bool {
+        return subseq(value_seq<item_v>{}, seq);
     }
 }}
 

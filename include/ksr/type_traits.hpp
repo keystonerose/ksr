@@ -26,12 +26,12 @@ namespace ksr {
     namespace detail {
 
         template <typename t>
-        constexpr auto underlying_type_ext(meta::type<t>) {
+        constexpr auto underlying_type_ext(meta::type_tag<t>) {
 
             if constexpr (std::is_enum_v<t>) {
-                return meta::type<std::underlying_type_t<t>>{};
+                return meta::type_tag<std::underlying_type_t<t>>{};
             } else {
-                return meta::type<std::remove_cv_t<t>>{};
+                return meta::type_tag<std::remove_cv_t<t>>{};
             }
         }
     }
@@ -44,7 +44,7 @@ namespace ksr {
     ///
 
     template <typename t>
-    using underlying_type_ext = decltype(detail::underlying_type_ext(meta::type<t>{}));
+    using underlying_type_ext = decltype(detail::underlying_type_ext(meta::type_tag<t>{}));
 
     template <typename t>
     using underlying_type_ext_t = typename underlying_type_ext<t>::type;

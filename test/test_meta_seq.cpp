@@ -18,7 +18,7 @@ namespace {
     template <typename seq_t>
     constexpr auto sum(const seq_t seq) -> int {
         auto result = 0;
-        for_each(seq, [&result](const auto item) { result += item; });
+        for_each(seq, [&result](const auto item) { result += item.value; });
         return result;
     }
 
@@ -30,7 +30,11 @@ namespace {
     static_assert(sum(homo_vals) == 6);
     static_assert(sum(hetero_vals) == 6);
 
-    static_assert(!contains(empty_vals, 1));
-    static_assert(contains(homo_vals, 1));
-    static_assert(contains(hetero_vals, 1));
+    static_assert(!contains<1>(empty_vals));
+    static_assert(contains<1>(homo_vals));
+    static_assert(contains<1>(hetero_vals));
+
+    static_assert(!contains<-1>(empty_vals));
+    static_assert(!contains<-1>(homo_vals));
+    static_assert(!contains<-1>(hetero_vals));
 }
