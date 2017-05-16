@@ -3,7 +3,7 @@
 using namespace ksr;
 using namespace meta;
 
-namespace test { namespace {
+namespace {
 
     template <typename seq_t>
     constexpr auto sum(const seq_t seq) -> int {
@@ -11,15 +11,12 @@ namespace test { namespace {
         for_each(seq, [&result](const auto item) { result += item.value; });
         return result;
     }
-}}
-
-namespace {
 
     constexpr auto empty = value_seq<>{};
     constexpr auto seq = value_seq<2, 3, 5>{};
 
-    static_assert(test::sum(empty) == 0);
-    static_assert(test::sum(seq) == 10);
+    static_assert(sum(empty) == 0);
+    static_assert(sum(seq) == 10);
 
     static_assert(!contains<-1>(empty));
     static_assert(!contains<0>(empty));
