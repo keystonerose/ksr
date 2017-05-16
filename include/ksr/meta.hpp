@@ -214,10 +214,10 @@ namespace ksr { namespace meta {
         } else {
             if constexpr (rhs.empty) {
                 return false;
-            } else if constexpr (rhs.head == lhs.head) {
-                return subseq(rhs.tail, lhs.tail);
+            } else if constexpr (lhs.head == rhs.head) {
+                return subseq(lhs.tail, rhs.tail);
             } else {
-                return subseq(rhs.tail, lhs);
+                return subseq(lhs, rhs.tail);
             }
         }
     }
