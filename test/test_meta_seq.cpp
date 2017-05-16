@@ -1,8 +1,5 @@
 #include "ksr/meta.hpp"
 
-#include <cstddef>
-#include <cstdint>
-
 using namespace ksr;
 using namespace meta;
 
