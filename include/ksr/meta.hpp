@@ -1,45 +1,68 @@
 #ifndef KSR_META_HPP
 #define KSR_META_HPP
 
+#include "meta_type_traits.hpp"
 #include <type_traits>
 
 namespace ksr { namespace meta {
 
-    ///
-    /// Wraps a single type \p t in an object that can be passed to or returned from \c constexpr
-    /// functions performing compile-time operations on types. The tagged type can be retrieved from
-    /// a \ref tag object using \c decltype and the \c type member type. \ref tag objects have no
-    /// state, but are considered identical when they represent the same type (in the sense of
-    /// \c std::is_same).
-    ///
+    /// `type_tag` and `value_tag` wrap single types or integral constants, respectively, in objects
+    /// that facilitate the deduction of corresponding template parameters and can be both be passed
+    /// to or returned from `constexpr` functions. The **kind** of such a tag object designates
+    /// whether it wraps a type or a value.
+
+    /// Tags a single type `t`, which can later be retrieved from the `type_tag` object using
+    /// `decltype` and the `type` member type.
 
     template <typename t>
-    struct tag {
+    struct type_tag {
         using type = t;
     };
 
+    /// Determines whether two `type_tag` objects represent the same type, in the sense of
+    /// `std::is_same`.
+
     template <typename lhs_t, typename rhs_t>
-    constexpr auto operator==(tag<lhs_t>, tag<rhs_t>) -> bool {
+    constexpr auto operator==(type_tag<lhs_t>, type_tag<rhs_t>) -> bool {
         return std::is_same_v<lhs_t, rhs_t>;
     }
 
     template <typename lhs_t, typename rhs_t>
-    constexpr auto operator!=(const tag<lhs_t> lhs, const tag<rhs_t> rhs) -> bool {
+    constexpr auto operator!=(const type_tag<lhs_t> lhs, const type_tag<rhs_t> rhs) -> bool {
         return !(lhs == rhs);
     }
 
-    ///
-    /// Wraps a pack of arbitrary types and provides operations for processing that pack in terms of
-    /// (presumably \c constexpr) \ref tag objects. \ref type_seq objects tagging a non-empty
-    /// \p ts pack are typically processed by splitting into a head (which is a \ref tag
-    /// representing the first type in \p ts) and a \c tail (which is another \ref type_seq
-    /// representing the following types in \p ts, and may be empty). These operations are available
-    /// via the members of those names when \p ts is non-empty, but are not present when it is
-    /// empty; whether or not this is the case is indicated by the \c empty member, which is present
-    /// in both cases.
-    ///
+    /// Tags an integral constant value `v`, which can later be retrieved via the `value` member.
+    /// While integral constants can of course be managed more naturally without the tagging
+    /// mechanism, this is necessary in some cases to facilitate the deduction of a corresponding
+    /// template parameter. `value_tag` objects are considered identical when they represent values
+    /// that themselves compare equal with `operator==`.
 
-    template <typename... ts>
+    template <auto v>
+    struct value_tag {
+        static constexpr auto value = v;
+    };
+
+    template <auto lhs_v, auto rhs_v>
+    constexpr auto operator==(value_tag<lhs_v>, value_tag<rhs_v>) -> bool {
+        return lhs_v == rhs_v;
+    }
+
+    template <auto lhs_v, auto rhs_v>
+    constexpr auto operator!=(const value_tag<lhs_v> lhs, const value_tag<rhs_v> rhs) -> bool {
+        return !(lhs == rhs);
+    }
+
+    /// `type_seq` and `value_seq are sequence counterparts of `type_tag` and `value_tag`: each
+    /// wraps a pack of arbitrary types or integral constants and provides operations for processing
+    /// that pack in terms of tag objects of the corresponding kind. Sequence objects that tag
+    /// non-empty packs are typically processed by splitting into a `head` (which is a tagged type
+    /// or value) and a `tail` (which is another sequence, and may be empty). These components are
+    /// available via the members of those names when the pack is non-empty, but are not present
+    /// when it is empty; whether or not this is the case is indicated by the `empty` member, which
+    /// is present in both cases.
+
+    template <typename...>
     struct type_seq;
 
     template <>
@@ -50,45 +73,158 @@ namespace ksr { namespace meta {
     template <typename head_t, typename... tail_ts>
     struct type_seq<head_t, tail_ts...> {
         static constexpr auto empty = false;
-        static constexpr auto head = tag<head_t>{};
+        static constexpr auto head = type_tag<head_t>{};
         static constexpr auto tail = type_seq<tail_ts...>{};
     };
 
-    ///
-    /// Determines whether the type sequence \p haystack contains the type tagged by \p needle at
-    /// any position.
-    ///
+    template <typename item_t, typename... seq_ts>
+    constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t>) {
+        return type_seq<seq_ts..., item_t>{};
+    }
 
-    template <typename needle_t, typename... haystack_ts>
-    constexpr auto contains(
-        const type_seq<haystack_ts...> haystack, const tag<needle_t> needle) -> bool {
+    template <typename item_t, typename... seq_ts>
+    constexpr auto push_front(type_seq<seq_ts...>, type_tag<item_t>) {
+        return type_seq<item_t, seq_ts...>{};
+    }
 
-        if constexpr (haystack.empty) {
-            return false;
-        } else if constexpr (haystack.head == needle) {
-            return true;
-        } else {
-            return contains(haystack.tail, needle);
+    template <auto...>
+    struct value_seq;
+
+    template <>
+    struct value_seq<> {
+        static constexpr auto empty = true;
+    };
+
+    template <auto head_v, auto... tail_vs>
+    struct value_seq<head_v, tail_vs...> {
+        static constexpr auto empty = false;
+        static constexpr auto head = value_tag<head_v>{};
+        static constexpr auto tail = value_seq<tail_vs...>{};
+    };
+
+    template <auto item_v, auto... seq_vs>
+    constexpr auto push_back(value_seq<seq_vs...>, value_tag<item_v> = {}) {
+        return value_seq<seq_vs..., item_v>{};
+    }
+
+    template <auto item_v, auto... seq_vs>
+    constexpr auto push_front(value_seq<seq_vs...>, value_tag<item_v> = {}) {
+        return value_seq<item_v, seq_vs...>{};
+    }
+
+    /// Trait used to constrain templates that operate upon the sequence types defined in
+    /// `ksr::meta`. Evaluates to `std::true_type` if every type in `ts` is a `type_seq`
+    /// instantiation or every type in `ts` is a `value_seq` instantiation, or to `std::false_type`
+    /// otherwise.
+
+    template <typename... ts>
+    struct is_seq : std::bool_constant<
+        std::conjunction_v<is_type_inst<ts, type_seq>...> ||
+        std::conjunction_v<is_value_inst<ts, value_seq>...>> {};
+
+    template <typename... ts>
+    inline constexpr auto is_seq_v = is_seq<ts...>::value;
+
+    /// Instantiates a specified template `op` that takes either type or non-type parameters using
+    /// the corresponding elements of the sequence `seq`, and makes the resulting type available
+    /// through the `type` member.
+
+    template <typename seq, template <typename...> class op>
+    struct apply_types {};
+
+    template <template <typename...> class op, typename... ts>
+    struct apply_types<type_seq<ts...>, op> {
+        using type = op<ts...>;
+    };
+
+    template <typename seq, template <typename...> class op>
+    using apply_types_t = typename apply_types<seq, op>::type;
+
+    template <typename seq, template <auto...> class op>
+    struct apply_values {};
+
+    template <template <auto...> class op, auto... vs>
+    struct apply_values<value_seq<vs...>, op> {
+        using type = op<vs...>;
+    };
+
+    template <typename seq, template <auto> class op>
+    using apply_values_t = typename apply_values<seq, op>::type;
+
+    /// Instantiates a specified template `op` taking a single type or non-type template parameter
+    /// for each corresponding element of the sequence `seq`, and makes the resulting sequence of
+    /// types available through the `type` member (which will itself be an instantiation of
+    /// `type_seq`). This is a metaprogramming analog of the `std::transform()` algorithm, and the
+    /// naming and parameter order reflects this.
+
+    template <typename seq, template <typename> class op>
+    struct transform_types {};
+
+    template <template <typename> class op, typename... ts>
+    struct transform_types<type_seq<ts...>, op> {
+        using type = type_seq<op<ts>...>;
+    };
+
+    template <typename seq, template <typename> class op>
+    using transform_types_t = typename transform_types<seq, op>::type;
+
+    template <typename seq, template <auto> class op>
+    struct transform_values {};
+
+    template <template <auto> class op, auto... vs>
+    struct transform_values<value_seq<vs...>, op> {
+        using type = type_seq<op<vs>...>;
+    };
+
+    template <typename seq, template <auto> class op>
+    using transform_values_t = typename transform_values<seq, op>::type;
+
+    /// Calls `visitor` for each item in `seq`, passed as a tagged object (that is, a `type_tag` or
+    /// `value_tag`, depending on the kind of `seq_t`). `seq_t` must be a sequence type in the sense
+    /// of the `is_seq` trait, and `visitor_t` must be a callable type taking a single argument of
+    /// any tag type in `seq_t`.
+
+    template <typename seq_t, typename visitor_t, typename = std::enable_if_t<is_seq_v<seq_t>>>
+    constexpr void for_each(const seq_t seq, const visitor_t visitor) {
+
+        if constexpr (!seq.empty) {
+            visitor(seq.head);
+            for_each(seq.tail, visitor);
         }
     }
 
-    ///
-    /// Determines whether the types tagged by \p lhs and \p rhs both occur within the type sequence
-    /// \p ordering, with \p lhs occurring strictly before \p rhs.
-    ///
+    /// Determines whether `lhs` is a subsequence of `lhs`. Both `lhs_t` and `rhs_t` must be
+    /// sequence types of the same kind in the sense of the `is_seq` trait. Returns `true` if both
+    /// `lhs` and `rhs` are empty.
 
-    template <typename lhs_t, typename rhs_t, typename... ordering_ts>
-    constexpr auto less(
-        const type_seq<ordering_ts...> ordering,
-        const tag<lhs_t> lhs, const tag<rhs_t> rhs) -> bool {
+    template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
+    constexpr auto subseq(const lhs_t lhs, const rhs_t rhs) -> bool {
 
-        if constexpr (ordering.empty) {
-            return false;
-        } else if constexpr (ordering.head == lhs) {
-            return contains(ordering.tail, rhs);
+        if constexpr (lhs.empty) {
+            return true;
         } else {
-            return less(ordering.tail, lhs, rhs);
+            if constexpr (rhs.empty) {
+                return false;
+            } else if constexpr (lhs.head == rhs.head) {
+                return subseq(lhs.tail, rhs.tail);
+            } else {
+                return subseq(lhs, rhs.tail);
+            }
         }
+    }
+
+    /// Determines whether `seq` contains a specified tagged type or integral constant (as
+    /// appropriate to the kind of `seq`). While this is a special case of `subseq()`, note the
+    /// reversed argument order (to fit the left-to-right reading of the predicate name).
+
+    template <typename item_t, typename... seq_ts>
+    constexpr auto contains(const type_seq<seq_ts...> seq, type_tag<item_t> = {}) -> bool {
+        return subseq(type_seq<item_t>{}, seq);
+    }
+
+    template <auto item_v, auto... seq_vs>
+    constexpr auto contains(const value_seq<seq_vs...> seq, value_tag<item_v> = {}) -> bool {
+        return subseq(value_seq<item_v>{}, seq);
     }
 }}
 
