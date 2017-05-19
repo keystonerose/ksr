@@ -61,6 +61,16 @@ namespace ksr {
 
     template <typename t>
     inline constexpr auto is_numeric_v = is_numeric<t>::value;
+
+    /// Determines whether every type in `ts` is the same as `ref_t`, in the sense of
+    /// `std::is_same` (and may therefore be considered a variadic extension of that standard
+    /// library trait).
+
+    template <typename ref_t, typename... ts>
+    using is_same = std::conjunction<std::is_same<ref_t, ts>...>;
+
+    template <typename ref_t, typename... ts>
+    inline constexpr auto is_same_v = is_same<ref_t, ts...>::value;
 }
 
 #endif
