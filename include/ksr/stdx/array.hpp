@@ -1,11 +1,11 @@
-#ifndef KSR_STD_ARRAY_HPP
-#define KSR_STD_ARRAY_HPP
+#ifndef KSR_STDX_ARRAY_HPP
+#define KSR_STDX_ARRAY_HPP
 
 #include <array>
 #include <type_traits>
 #include <utility>
 
-namespace ksr {
+namespace ksr { namespace stdx {
 
     /// Creates a `std::array` containing the given arguments, inferring the number of elements and,
     /// optionally, the value type of the array. If no argument is given for `value_t` or `value_t`
@@ -21,6 +21,6 @@ namespace ksr {
 
         return std::array<ext_value_t, sizeof...(arg_ts)>{std::forward<arg_ts>(args)...};
     }
-}
+}}
 
 #endif

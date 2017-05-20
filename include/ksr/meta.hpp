@@ -78,12 +78,12 @@ namespace ksr { namespace meta {
     };
 
     template <typename item_t, typename... seq_ts>
-    constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t>) {
+    constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t> = {}) {
         return type_seq<seq_ts..., item_t>{};
     }
 
     template <typename item_t, typename... seq_ts>
-    constexpr auto push_front(type_seq<seq_ts...>, type_tag<item_t>) {
+    constexpr auto push_front(type_seq<seq_ts...>, type_tag<item_t> = {}) {
         return type_seq<item_t, seq_ts...>{};
     }
 

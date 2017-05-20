@@ -1,5 +1,5 @@
 #include "ksr/functional.hpp"
-#include "ksr/std/array.hpp"
+#include "ksr/stdx/array.hpp"
 
 #include "catch/catch.hpp"
 #include <algorithm>
@@ -17,7 +17,7 @@ namespace {
         return lhs.value == rhs.value;
     }
 
-    constexpr auto arr = make_array(agg{0}, agg{1}, agg{2});
+    constexpr auto arr = stdx::make_array(agg{0}, agg{1}, agg{2});
 }
 
 TEST_CASE("mem_equals", "[functional][predicates]") {
@@ -27,7 +27,7 @@ TEST_CASE("mem_equals", "[functional][predicates]") {
 }
 
 TEST_CASE("mem_less", "[functional][predicates]") {
-    auto temp = make_array(agg{2}, agg{1}, agg{0});
+    auto temp = stdx::make_array(agg{2}, agg{1}, agg{0});
     std::sort(std::begin(temp), std::end(temp), mem_less<&agg::value>{});
     CHECK(temp == arr);
 }
