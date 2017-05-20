@@ -21,8 +21,9 @@ namespace {
 }
 
 TEST_CASE("mem_equals", "[functional][predicates]") {
-    CHECK(std::any_of(std::cbegin(arr), std::cend(arr), mem_equals<&agg::value>{2}));
-    CHECK(std::none_of(std::cbegin(arr), std::cend(arr), mem_equals<&agg::value>{-1}));
+    CHECK(std::any_of(std::cbegin(arr), std::cend(arr), mem_is_equal_to<&agg::value>{2}));
+    CHECK(std::none_of(std::cbegin(arr), std::cend(arr), mem_is_equal_to<&agg::value>{-1}));
+    CHECK(std::all_of(std::cbegin(arr), std::cend(arr), mem_is_not_equal_to<&agg::value>{-1}));
 }
 
 TEST_CASE("mem_less", "[functional][predicates]") {

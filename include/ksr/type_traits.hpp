@@ -8,13 +8,11 @@
 
 namespace ksr {
 
-    ///
     /// Determines whether a constructor declared equivalently to
-    /// template <typename arg_t> t(arg_t&&)
-    /// would match the copy or move constructor of t for a specific instantiation by \p arg_t. May
-    /// be used with \c std::enable_if to ensure that universal constructors do are not instantiated
-    /// when they may interfere with these special constructors.
-    ///
+    /// `template <typename arg_t> t(arg_t&&)` would match the copy or move constructor of `t` for a
+    /// specific instantiation by `arg_t`. May be used with `std::enable_if` to ensure that
+    /// universal constructors are not instantiated when they may interfere with these special
+    /// constructors.
 
     template <typename t, typename arg_t>
     struct matches_special_ctr : std::bool_constant<
@@ -36,12 +34,9 @@ namespace ksr {
         }
     }
 
-    ///
-    /// An extension of \c std::underlying_type that may be applied to arbitrary types. If \p t is
-    /// an enumeration type, provides the same behaviour as the standard library facility;
-    /// otherwise, returns \p t itself, with any CV qualifiers removed (for consistency with former
-    /// case).
-    ///
+    /// An extension of `std::underlying_type` that may be applied to arbitrary types. If `t` is an
+    /// enumeration type, provides the same behaviour as the standard library facility; otherwise,
+    /// returns `t` itself, with any CV qualifiers removed (for consistency with former case).
 
     template <typename t>
     using underlying_type_ext = decltype(detail::underlying_type_ext(meta::type_tag<t>{}));
@@ -49,11 +44,9 @@ namespace ksr {
     template <typename t>
     using underlying_type_ext_t = typename underlying_type_ext<t>::type;
 
-    ///
-    /// Determines whether the type \p t is arithmetic once transformed to any potentially
-    /// underlying type as per \ref underlying_type_ext. Crucially, this includes enumeration types
-    /// as well as those that would normally be identified by \c std::is_arithmetic.
-    ///
+    /// Determines whether the type `t` is arithmetic once transformed to any potentially underlying
+    /// type as per `underlying_type_ext`. Crucially, this includes enumeration types
+    /// as well as those that would normally be identified by `std::is_arithmetic`.
 
     template <typename t>
     struct is_numeric : std::bool_constant<
@@ -71,6 +64,20 @@ namespace ksr {
 
     template <typename ref_t, typename... ts>
     inline constexpr auto is_same_v = is_same<ref_t, ts...>::value;
+
+    /// Gets the type of member pointed to by `mem_ptr`, where `mem_ptr` is a pointer to a member
+    /// of any class type to the type of the member that it points to.
+
+    template <auto mem_ptr>
+    struct mem_type;
+
+    template <typename mem_t, typename t, mem_t t::* mem_ptr>
+    struct mem_type<mem_ptr> {
+        using type = mem_t;
+    };
+
+    template <auto mem_ptr>
+    using mem_type_t = typename mem_type<mem_ptr>::type;
 }
 
 #endif
