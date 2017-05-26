@@ -192,28 +192,48 @@ namespace ksr { namespace meta {
         return size(seq) == 0;
     }
 
-    /// Concatenates `lhs` and `rhs` by recursively appending each element of `rhs` to `lhs`. `lhs`
-    /// and `rhs` must be sequence types of the same kind in the sense of the `is_seq` trait.
-    /// Results in fewer template instantiations when `rhs` is shorter than `lhs`; if the order of
-    /// concatenation is unimportant and the relative lengths of the operands are known, the shorter
-    /// sequence should preferentially appear on the right hand side.
+    namespace detail {
+
+        /// Implements the functionality of `concat()` by recursively appending each element of
+        /// `rhs` to `lhs`. Results in fewer template instantiations than `concat_front()` when
+        /// `rhs` is shorter than `lhs`.
+
+        template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
+        constexpr auto concat_back(const lhs_t lhs, const rhs_t rhs) {
+
+            if constexpr (empty(rhs)) {
+                return lhs;
+            } else {
+                return concat_back(push_back(lhs, rhs.head), rhs.tail);
+            }
+        }
+
+        /// Implements the functionality of `concat()` by recursively prepending each element of
+        /// `lhs` to `rhs`. Results in fewer template instantiations than `concat_back()` when `lhs`
+        /// is shorter than `rhs`.
+
+        template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
+        constexpr auto concat_front(const lhs_t lhs, const rhs_t rhs) {
+
+            if constexpr (empty(lhs)) {
+                return rhs;
+            } else {
+                return push_front(concat(lhs.tail, rhs), lhs.head);
+            }
+        }
+    }
+
+    /// Concatenates `lhs` and `rhs` by recursively pushing elements of the shorter operand sequence
+    /// onto the longer one. `lhs` and `rhs` must be sequence types of the same kind in the sense of
+    /// the `is_seq` trait.
 
     template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
     constexpr auto concat(const lhs_t lhs, const rhs_t rhs) {
 
-        // The special cases for when lhs is empty or contains only a single element aren't strictly
-        // necessary, but save a bunch of unnecessary template instantiations in these somewhat
-        // common cases. (In particular, concatenating a secondary type sequence to a single primary
-        // type (e.g. `std::monostate`) is common in the STL adaptors of the `stdx` namespace).
-
-        if constexpr (empty(rhs)) {
-            return lhs;
-        } else if constexpr (empty(lhs)) {
-            return rhs;
-        } else if constexpr (size(lhs) == 1) {
-            return push_front(rhs, lhs.head);
+        if constexpr (size(lhs) <= size(rhs)) {
+            return detail::concat_front(lhs, rhs);
         } else {
-            return concat(push_back(lhs, rhs.head), rhs.tail);
+            return detail::concat_back(lhs, rhs);
         }
     }
 
