@@ -12,13 +12,13 @@ namespace ksr { namespace stdx {
     // type in the variant.
 
     template <typename type_seq_t, typename... extra_ts>
-    using variant = meta::apply_types_t<decltype(meta::concat(meta::type_seq<extra_ts...>{}, type_seq_t{})), std::variant>;
+    using variant = decltype(meta::apply_to<std::variant>(meta::concat(meta::type_seq<extra_ts...>{}, type_seq_t{})));
 
-    template <template <typename> class op, typename type_seq_t, typename... extra_ts>
-    using type_domain_variant = variant<meta::transform_types_t<type_seq_t, op>, extra_ts...>;
+    template <template <typename> class op, typename seq_t, typename... extra_ts>
+    using type_domain_variant = variant<decltype(meta::transform_by<op>(seq_t{})), extra_ts...>;
 
-    template <template <auto> class op, typename value_seq_t, typename... extra_ts>
-    using value_domain_variant = variant<meta::transform_values_t<value_seq_t, op>, extra_ts...>;
+    template <template <auto> class op, typename seq_t, typename... extra_ts>
+    using value_domain_variant = variant<decltype(meta::transform_by<op>(seq_t{})), extra_ts...>;
 }}
 
 #endif

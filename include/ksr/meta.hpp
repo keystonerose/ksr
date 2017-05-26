@@ -131,58 +131,28 @@ namespace ksr { namespace meta {
     inline constexpr auto is_seq_v = is_seq<ts...>::value;
 
     /// Instantiates a specified template `op` that takes either type or non-type parameters using
-    /// the corresponding elements of the sequence `seq`, and makes the resulting type available
-    /// through the `type` member.
-
-    template <typename seq, template <typename...> class op>
-    struct apply_types {};
+    /// the corresponding elements of the sequence `seq`. The resulting type may be obtained via
+    /// `decltype`; no function definition is provided, nor would it be possible to implement.
 
     template <template <typename...> class op, typename... ts>
-    struct apply_types<type_seq<ts...>, op> {
-        using type = op<ts...>;
-    };
-
-    template <typename seq, template <typename...> class op>
-    using apply_types_t = typename apply_types<seq, op>::type;
-
-    template <typename seq, template <auto...> class op>
-    struct apply_values {};
+    auto apply_to(type_seq<ts...>) -> op<ts...>;
 
     template <template <auto...> class op, auto... vs>
-    struct apply_values<value_seq<vs...>, op> {
-        using type = op<vs...>;
-    };
-
-    template <typename seq, template <auto> class op>
-    using apply_values_t = typename apply_values<seq, op>::type;
+    auto apply_to(value_seq<vs...>) -> op<vs...>;
 
     /// Instantiates a specified template `op` taking a single type or non-type template parameter
-    /// for each corresponding element of the sequence `seq`, and makes the resulting sequence of
-    /// types available through the `type` member (which will itself be an instantiation of
-    /// `type_seq`). This is a metaprogramming analog of the `std::transform()` algorithm, and the
-    /// naming and parameter order reflects this.
-
-    template <typename seq, template <typename> class op>
-    struct transform_types {};
+    /// for each corresponding element of the sequence `seq`, returning a `type_seq` object tagging
+    /// the sequence of `op` instantiations.
 
     template <template <typename> class op, typename... ts>
-    struct transform_types<type_seq<ts...>, op> {
-        using type = type_seq<op<ts>...>;
-    };
-
-    template <typename seq, template <typename> class op>
-    using transform_types_t = typename transform_types<seq, op>::type;
-
-    template <typename seq, template <auto> class op>
-    struct transform_values {};
+    constexpr auto transform_by(type_seq<ts...>) {
+        return type_seq<op<ts>...>{};
+    }
 
     template <template <auto> class op, auto... vs>
-    struct transform_values<value_seq<vs...>, op> {
-        using type = type_seq<op<vs>...>;
-    };
-
-    template <typename seq, template <auto> class op>
-    using transform_values_t = typename transform_values<seq, op>::type;
+    constexpr auto transform_by(value_seq<vs...>) {
+        return type_seq<op<vs>...>{};
+    }
 
     /// Determines whether `seq` is an empty sequence. Nonempty sequences provide `head` and `tail`
     /// members. `seq_t` must be a sequence type in the sense of the `is_seq` trait.
