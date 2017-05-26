@@ -7,11 +7,18 @@
 
 namespace ksr { namespace stdx {
 
-    template <typename type_seq>
-    using variant_of = meta::apply_types_t<type_seq, std::variant>;
+    // These adapter aliases for `std::variant` instantiate that template with the `extra_ts`
+    // parameters before those of `type_seq_t`; this allows `std::monostate` to be used as the first
+    // type in the variant.
 
-    template <typename type_seq>
-    using opt_variant_of = variant_of<decltype(meta::push_front<std::monostate>(type_seq{}))>;
+    template <typename type_seq_t, typename... extra_ts>
+    using variant = meta::apply_types_t<decltype(meta::concat(meta::type_seq<extra_ts...>{}, type_seq_t{})), std::variant>;
+
+    template <template <typename> class op, typename type_seq_t, typename... extra_ts>
+    using type_domain_variant = variant<meta::transform_types_t<type_seq_t, op>, extra_ts...>;
+
+    template <template <auto> class op, typename value_seq_t, typename... extra_ts>
+    using value_domain_variant = variant<meta::transform_values_t<value_seq_t, op>, extra_ts...>;
 }}
 
 #endif

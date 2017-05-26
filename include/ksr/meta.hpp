@@ -2,6 +2,8 @@
 #define KSR_META_HPP
 
 #include "meta_type_traits.hpp"
+
+#include <cstddef>
 #include <type_traits>
 
 namespace ksr { namespace meta {
@@ -56,26 +58,27 @@ namespace ksr { namespace meta {
     /// `type_seq` and `value_seq are sequence counterparts of `type_tag` and `value_tag`: each
     /// wraps a pack of arbitrary types or integral constants and provides operations for processing
     /// that pack in terms of tag objects of the corresponding kind. Sequence objects that tag
-    /// non-empty packs are typically processed by splitting into a `head` (which is a tagged type
-    /// or value) and a `tail` (which is another sequence, and may be empty). These components are
-    /// available via the members of those names when the pack is non-empty, but are not present
-    /// when it is empty; whether or not this is the case is indicated by the `empty` member, which
-    /// is present in both cases.
+    /// non-empty packs are typically processed by splitting into a head (which is a tagged type or
+    /// or value) and a tail (which is another sequence, and may be empty) via the `head` and `tail`
+    /// members. These components are available only when the pack is non-empty; whether or not this
+    /// is the case can be determined via the nonmember `empty()` predicate.
 
     template <typename...>
     struct type_seq;
 
     template <>
-    struct type_seq<> {
-        static constexpr auto empty = true;
-    };
+    struct type_seq<> {};
 
     template <typename head_t, typename... tail_ts>
     struct type_seq<head_t, tail_ts...> {
-        static constexpr auto empty = false;
         static constexpr auto head = type_tag<head_t>{};
         static constexpr auto tail = type_seq<tail_ts...>{};
     };
+
+    template <typename... ts>
+    constexpr auto size(type_seq<ts...>) -> std::size_t {
+        return sizeof...(ts);
+    }
 
     template <typename item_t, typename... seq_ts>
     constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t> = {}) {
@@ -91,16 +94,18 @@ namespace ksr { namespace meta {
     struct value_seq;
 
     template <>
-    struct value_seq<> {
-        static constexpr auto empty = true;
-    };
+    struct value_seq<> {};
 
     template <auto head_v, auto... tail_vs>
     struct value_seq<head_v, tail_vs...> {
-        static constexpr auto empty = false;
         static constexpr auto head = value_tag<head_v>{};
         static constexpr auto tail = value_seq<tail_vs...>{};
     };
+
+    template <auto... vs>
+    constexpr auto size(value_seq<vs...>) -> std::size_t {
+        return sizeof...(vs);
+    }
 
     template <auto item_v, auto... seq_vs>
     constexpr auto push_back(value_seq<seq_vs...>, value_tag<item_v> = {}) {
@@ -179,6 +184,39 @@ namespace ksr { namespace meta {
     template <typename seq, template <auto> class op>
     using transform_values_t = typename transform_values<seq, op>::type;
 
+    /// Determines whether `seq` is an empty sequence. Nonempty sequences provide `head` and `tail`
+    /// members. `seq_t` must be a sequence type in the sense of the `is_seq` trait.
+
+    template <typename seq_t, typename = std::enable_if_t<is_seq_v<seq_t>>>
+    constexpr auto empty(const seq_t seq) -> bool {
+        return size(seq) == 0;
+    }
+
+    /// Concatenates `lhs` and `rhs` by recursively appending each element of `rhs` to `lhs`. `lhs`
+    /// and `rhs` must be sequence types of the same kind in the sense of the `is_seq` trait.
+    /// Results in fewer template instantiations when `rhs` is shorter than `lhs`; if the order of
+    /// concatenation is unimportant and the relative lengths of the operands are known, the shorter
+    /// sequence should preferentially appear on the right hand side.
+
+    template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
+    constexpr auto concat(const lhs_t lhs, const rhs_t rhs) {
+
+        // The special cases for when lhs is empty or contains only a single element aren't strictly
+        // necessary, but save a bunch of unnecessary template instantiations in these somewhat
+        // common cases. (In particular, concatenating a secondary type sequence to a single primary
+        // type (e.g. `std::monostate`) is common in the STL adaptors of the `stdx` namespace).
+
+        if constexpr (empty(rhs)) {
+            return lhs;
+        } else if constexpr (empty(lhs)) {
+            return rhs;
+        } else if constexpr (size(lhs) == 1) {
+            return push_front(rhs, lhs.head);
+        } else {
+            return concat(push_back(lhs, rhs.head), rhs.tail);
+        }
+    }
+
     /// Calls `visitor` for each item in `seq`, passed as a tagged object (that is, a `type_tag` or
     /// `value_tag`, depending on the kind of `seq_t`). `seq_t` must be a sequence type in the sense
     /// of the `is_seq` trait, and `visitor_t` must be a callable type taking a single argument of
@@ -187,7 +225,7 @@ namespace ksr { namespace meta {
     template <typename seq_t, typename visitor_t, typename = std::enable_if_t<is_seq_v<seq_t>>>
     constexpr void for_each(const seq_t seq, const visitor_t visitor) {
 
-        if constexpr (!seq.empty) {
+        if constexpr (!empty(seq)) {
             visitor(seq.head);
             for_each(seq.tail, visitor);
         }
@@ -200,10 +238,10 @@ namespace ksr { namespace meta {
     template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
     constexpr auto subseq(const lhs_t lhs, const rhs_t rhs) -> bool {
 
-        if constexpr (lhs.empty) {
+        if constexpr (empty(lhs)) {
             return true;
         } else {
-            if constexpr (rhs.empty) {
+            if constexpr (empty(rhs)) {
                 return false;
             } else if constexpr (lhs.head == rhs.head) {
                 return subseq(lhs.tail, rhs.tail);
