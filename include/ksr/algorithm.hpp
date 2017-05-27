@@ -1,64 +1,42 @@
 #ifndef KSR_ALGORITHM_HPP
 #define KSR_ALGORITHM_HPP
 
+#include "range.hpp"
 #include "type_util.hpp"
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <iterator>
 #include <type_traits>
 
 namespace ksr {
 
-    /// Combines a pair of begin and past-the-end iterators of type `iter` into an object modeling
-    /// the `Range` concept (as it exists in C++17) that can be iterated over in a range-based `for`
-    /// loop, operated upon by generic algorithms, and implicitly copied to any type constructible
-    /// from an iterator range (such as the standard library containers). Will likely be superseded
-    /// by a standardised utility once the Ranges TS is merged.
+    template <typename input_it, typename t>
+    auto contains(const input_it begin, const input_it end, const t& value) -> bool {
+        return std::find(begin, end, value) != end;
+    }
 
-    template <typename iter>
-    class range {
-    public:
-
-        constexpr explicit range(const iter begin, const iter end)
-            : m_begin{begin}, m_end{end} {}
-
-        template <typename t, typename = std::enable_if_t<std::is_constructible_v<t, iter, iter>>>
-        operator t() const {
-            return t(m_begin, m_end);
-        }
-
-        constexpr auto begin() const noexcept -> iter {
-            return m_begin;
-        }
-
-        constexpr auto end() const noexcept -> iter {
-            return m_end;
-        }
-
-    private:
-
-        iter m_begin;
-        iter m_end;
-    };
-
-    template <typename iter>
-    range(iter, iter) -> range<iter>;
+    template <typename range_t, typename t, typename = std::enable_if_t<is_range_v<range_t>>>
+    auto contains(const range_t& range, const t& value) -> bool {
+        return contains(adl_begin(range), adl_end(range), value);
+    }
 
     /// Iterates through all elements in `container` and calls Container::erase() individually for
-    /// each one that satisfies `pred`. `Container` should be an STL-style container for which
-    /// repeated single-element erasure is preferable to the standard erase-remove idiom (or for
-    /// which the latter approach is not possible, e.g. the associative containers). `Predicate`
-    /// should be a function type compatible with bool(const Container::value_type &).
+    /// each one that satisfies `pred` (when invoked as per `std::invoke()`. `container_t` should be
+    /// an STL-style container type for which repeated single-element erasure is preferable to the
+    /// standard erase-remove idiom (or for which the latter approach is not possible, e.g. the
+    /// associative containers). `pred` should be a function object for which
+    /// `std::invoke(pred, item)` is well-formed and convertible to `bool` when `item` as an object
+    /// of type `container_t::value_type`.
 
     template <typename container_t, typename pred_t>
     void erase_if(container_t &container, pred_t pred) {
 
-        using std::begin;
-        using std::end;
+        auto iter = adl_begin(container);
+        while (iter != adl_end(container)) {
 
-        for (auto iter = begin(container); iter != end(container);) {
-            if (pred(*iter)) {
+            if (std::invoke(pred, *iter)) {
                 iter = container.erase(iter);
             } else {
                 ++iter;
@@ -69,14 +47,11 @@ namespace ksr {
     /// Invokes `callback` on each `k`-element partial permutation of the sorted range
     /// `[begin, end)`, in lexicographic order. Elements of this range are permuted in-place; once
     /// this algorithm returns, the range is once more sorted as if by `std::sort()`. `callback`
-    /// must be a function object compatible with the following signature:
-    /// ```c++
-    /// void callback(const range<bidir_it>&);
-    /// ```
-    /// Note that since `range` may (at the cost of a copy) be implicitly converted to a container
-    /// type, `callback` may instead take an argument of an appropriate owning container type if a
-    /// copy of this range is to be stored. `callback` must not assign to any element in the
-    /// original range.
+    /// must be a function object for which `std::invoke(callback, r)` is well-formed when `r` is an
+    /// object of type `range<bidir_it>`. Note that since `range` may (at the cost of a copy) be
+    /// implicitly converted to a container type, this means that `callback` may take a parameter of
+    /// any appropriate owning container type if a copy of this range is to be stored. `callback`
+    /// must not assign to any element in the original range.
 
     template <typename bidir_it, typename callback_t>
     void k_permute(
@@ -86,9 +61,35 @@ namespace ksr {
         std::advance(mid, k);
 
         do {
-            callback(range{begin, mid});
+            std::invoke(callback, range{begin, mid});
             std::reverse(mid, end);
         } while (std::next_permutation(begin, end));
+    }
+
+    template <typename range_t, typename callback_t, typename = std::enable_if_t<is_range_v<range_t>>>
+    void k_permute(range_t& range, const std::size_t k, callback_t callback) {
+        k_permute(adl_begin(range), adl_end(range), k, callback);
+    }
+
+    /// Invokes `mutator` as if by `std::invoke()` on a copy of `value` alongside each item in the
+    /// range `[begin, end)`, and returns the subsequent value of `value`. `mutator` must be a
+    /// function object for which `std::invoke(mutator, value, rhs)` is well-formed when `rhs` is an
+    /// object of the value type of `input_it`; it is expected that `mutator` take `value` as a
+    /// mutable reference and (potentially) modify that value when called. Note the similarity to
+    /// `std::accumulate`.
+
+    template <typename input_it, typename t, typename mutator_t>
+    auto mutate_for_each(input_it begin, const input_it end, t value, mutator_t mutator) -> t {
+
+        for (; begin != end; ++begin) {
+            std::invoke(mutator, value, *begin);
+        }
+        return value;
+    }
+
+    template <typename range_t, typename t, typename mutator_t, typename = std::enable_if_t<is_range_v<range_t>>>
+    auto mutate_for_each(const range_t& range, const t& value, mutator_t mutator) -> t {
+        return mutate_for_each(adl_begin(range), adl_end(range), value, mutator);
     }
 
     /// Invokes `callback` on each k-element partial permutation of the sorted range `[begin, end)`
@@ -101,6 +102,11 @@ namespace ksr {
         for (auto k = std::size_t{0}; k <= size; ++k) {
             k_permute(begin, end, k, callback);
         }
+    }
+
+    template <typename range_t, typename callback_t, typename = std::enable_if_t<is_range_v<range_t>>>
+    void sub_permute(range_t& range, callback_t callback) {
+        sub_permute(adl_begin(range), adl_end(range), callback);
     }
 }
 

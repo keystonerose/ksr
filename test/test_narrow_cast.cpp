@@ -1,6 +1,7 @@
 #include "ksr/type_util.hpp"
 
 #include "catch/catch.hpp"
+
 #include <cmath>
 #include <cstdint>
 #include <limits>

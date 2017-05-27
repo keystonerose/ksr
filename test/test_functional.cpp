@@ -1,6 +1,7 @@
 #include "ksr/functional.hpp"
 
 #include "catch/catch.hpp"
+
 #include <algorithm>
 #include <array>
 #include <iterator>

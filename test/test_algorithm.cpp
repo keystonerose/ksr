@@ -1,6 +1,7 @@
 #include "ksr/algorithm.hpp"
 
 #include "catch/catch.hpp"
+
 #include <iterator>
 #include <utility>
 #include <vector>
@@ -18,7 +19,7 @@ namespace {
             actual.push_back(std::move(sub_permutation));
         };
 
-        sub_permute(std::begin(domain), std::end(domain), push_back);
+        sub_permute(domain, push_back);
         return actual == expected;
     }
 }
