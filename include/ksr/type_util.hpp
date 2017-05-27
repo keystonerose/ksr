@@ -15,8 +15,8 @@ namespace ksr {
         /// less than a zero-initialized value of the same type.
         ///
 
-        template <typename t>
-        constexpr auto is_negative(const t value) -> std::enable_if_t<is_numeric_v<t>, bool> {
+        template <typename t, typename = std::enable_if_t<is_numeric_v<t>>>
+        constexpr auto is_negative(const t value) -> bool {
             using underlying_t = underlying_type_ext_t<t>;
             return static_cast<underlying_t>(value) < underlying_t{};
         }
@@ -35,9 +35,11 @@ namespace ksr {
     /// \c static_cast for release builds, facilitates more extensive use.
     ///
 
-    template <typename output_t, typename input_t>
-    constexpr auto narrow_cast(const input_t input)
-        -> std::enable_if_t<is_numeric_v<output_t> && is_numeric_v<input_t>, output_t> {
+    template <
+        typename output_t, typename input_t,
+        typename = std::enable_if_t<is_numeric_v<output_t> && is_numeric_v<input_t>>
+    >
+    constexpr auto narrow_cast(const input_t input) -> output_t {
 
         const auto output = static_cast<output_t>(input);
         KSR_ASSERT(static_cast<input_t>(output) == input);

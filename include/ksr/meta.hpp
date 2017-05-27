@@ -213,7 +213,7 @@ namespace ksr { namespace meta {
     /// any tag type in `seq_t`.
 
     template <typename seq_t, typename visitor_t, typename = std::enable_if_t<is_seq_v<seq_t>>>
-    constexpr void for_each(const seq_t seq, const visitor_t visitor) {
+    constexpr void for_each(const seq_t seq, [[maybe_unused]] const visitor_t visitor) {
 
         if constexpr (!empty(seq)) {
             visitor(seq.head);
@@ -226,7 +226,7 @@ namespace ksr { namespace meta {
     /// `lhs` and `rhs` are empty.
 
     template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
-    constexpr auto subseq(const lhs_t lhs, const rhs_t rhs) -> bool {
+    constexpr auto subseq(const lhs_t lhs, [[maybe_unused]] const rhs_t rhs) -> bool {
 
         if constexpr (empty(lhs)) {
             return true;

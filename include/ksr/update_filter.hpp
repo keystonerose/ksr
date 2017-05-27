@@ -248,9 +248,12 @@ namespace ksr {
 
 // It looks like this is weirdness in the development version of libstdc++, in whose <utility>
 // header std::tuple_element is declared variously as both a struct template and a class template.
+// GCC doesn't care about this, but Clang complains.
 
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wmismatched-tags"
+#endif
 
 namespace std {
 
@@ -267,7 +270,9 @@ namespace std {
         : public std::integral_constant<std::size_t, sizeof...(value_ts)> {};
 }
 
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 namespace ksr {
 
