@@ -44,14 +44,11 @@ namespace ksr {
         }
     }
 
-    /// Invokes `callback` on each `k`-element partial permutation of the sorted range
+    /// Invokes `callback` on each  `k`-element partial permutation of the sorted range
     /// `[begin, end)`, in lexicographic order. Elements of this range are permuted in-place; once
     /// this algorithm returns, the range is once more sorted as if by `std::sort()`. `callback`
-    /// must be a function object for which `std::invoke(callback, r)` is well-formed when `r` is an
-    /// object of type `range<bidir_it>`. Note that since `range` may (at the cost of a copy) be
-    /// implicitly converted to a container type, this means that `callback` may take a parameter of
-    /// any appropriate owning container type if a copy of this range is to be stored. `callback`
-    /// must not assign to any element in the original range.
+    /// must be a function object for which `std::invoke(callback, begin, end)` is well-formed.
+    /// `callback` may not assign to any element in the original range.
 
     template <typename bidir_it, typename callback_t>
     void k_permute(
@@ -61,7 +58,7 @@ namespace ksr {
         std::advance(mid, k);
 
         do {
-            std::invoke(callback, range{begin, mid});
+            std::invoke(callback, begin, mid);
             std::reverse(mid, end);
         } while (std::next_permutation(begin, end));
     }

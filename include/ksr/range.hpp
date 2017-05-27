@@ -73,29 +73,22 @@ namespace ksr {
 
     /// Archetype of the `is_range` type trait: combines a pair of begin and past-the-end iterators
     /// of type `iter` into an object modeling the `Range` concept (as it exists in C++17) that can
-    /// be iterated over in a range-based `for` loop and operated upon by generic algorithms.
-    /// Provides implicit conversions from any type satisfying the `is_range` trait and to any type
-    /// constructible from an iterator range of the appropriate type (such as the standard library
-    /// containers). Will likely be superseded by a standardised utility once the Ranges TS is
-    /// merged.
+    /// be succinctly iterated over in a range-based `for` loop. Will likely be superseded by a
+    /// standardised utility once the Ranges TS is merged.
 
     template <typename iter>
     class range {
     public:
 
-        explicit range(const iter begin, const iter end)
+        constexpr explicit range(const iter begin, const iter end)
+            noexcept(std::is_nothrow_copy_constructible_v<iter>)
           : m_begin{begin}, m_end{end} {}
 
-        template <typename container_t, typename = std::enable_if_t<std::is_constructible_v<container_t, iter, iter>>>
-        operator container_t() const {
-            return container_t(m_begin, m_end);
-        }
-
-        auto begin() const -> iter {
+        constexpr auto begin() const noexcept(std::is_nothrow_copy_constructible_v<iter>) -> iter {
             return m_begin;
         }
 
-        auto end() const -> iter {
+        constexpr auto end() const noexcept(std::is_nothrow_copy_constructible_v<iter>) -> iter {
             return m_end;
         }
 

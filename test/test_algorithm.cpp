@@ -15,8 +15,8 @@ namespace {
     auto has_sub_permutations(seq domain, const meta_seq& expected) -> bool {
 
         auto actual = meta_seq{};
-        const auto push_back = [&actual](seq sub_permutation) {
-            actual.push_back(std::move(sub_permutation));
+        const auto push_back = [&actual](const auto begin, const auto end) {
+            actual.push_back(seq{begin, end});
         };
 
         sub_permute(domain, push_back);
