@@ -47,6 +47,14 @@ namespace ksr {
 
         return output;
     }
+
+    /// Casts a value of an enumeration type (in the sense of the `std::is_enum` trait) to its
+    /// underlying type.
+
+    template <typename enum_t, typename = std::enable_if_t<std::is_enum_v<enum_t>>>
+    constexpr auto under_cast(const enum_t enum_val) noexcept {
+        return static_cast<std::underlying_type_t<enum_t>>(enum_val);
+    }
 }
 
 #endif
