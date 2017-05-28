@@ -254,6 +254,22 @@ namespace ksr { namespace meta {
     constexpr auto contains(const value_seq<seq_vs...> seq, value_tag<item_v> = {}) -> bool {
         return subseq(value_seq<item_v>{}, seq);
     }
+
+    /// Returns the subsequence of `lhs` consisting of elements occurring at least once in `rhs`.
+    /// Both `lhs_t` and `rhs_t` must be sequence types of the same kind in the sense of the
+    /// `is_seq` trait.
+
+    template <typename lhs_t, typename rhs_t, typename = std::enable_if_t<is_seq_v<lhs_t, rhs_t>>>
+    constexpr auto intersection(const lhs_t lhs, const rhs_t rhs) {
+
+        if constexpr (empty(lhs)) {
+            return lhs;
+        } else if constexpr (contains(rhs, lhs.head)) {
+            return concat(lhs.head, intersection(lhs.tail, rhs));
+        } else {
+            return intersection(lhs.tail, rhs);
+        }
+    }
 }}
 
 #endif
