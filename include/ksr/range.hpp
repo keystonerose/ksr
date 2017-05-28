@@ -3,6 +3,7 @@
 
 #include "type_traits.hpp"
 
+#include <functional>
 #include <iterator>
 #include <type_traits>
 #include <utility>
@@ -71,35 +72,31 @@ namespace ksr {
         noexcept(noexcept(detail::with_adl::end_(range)))
         -> decltype(auto) { return detail::with_adl::end_(range); }
 
-    /// Archetype of the `is_range` type trait: combines a pair of begin and past-the-end iterators
-    /// of type `iter` into an object modeling the `Range` concept (as it exists in C++17) that can
-    /// be succinctly iterated over in a range-based `for` loop. Will likely be superseded by a
-    /// standardised utility once the Ranges TS is merged.
+    /// Archetype of the `is_range` type trait: combines by reference a pair of begin and
+    /// past-the-end iterators of type `iter` into an view modeling the `Range` concept (as it
+    /// exists in C++17) that can be succinctly iterated over in a range-based `for` loop. Will
+    /// likely be superseded by a standardised utility once the Ranges TS is merged.
 
     template <typename iter>
-    class range {
+    class range_view {
     public:
 
-        constexpr explicit range(const iter begin, const iter end)
-            noexcept(std::is_nothrow_copy_constructible_v<iter>)
+        explicit range_view(const iter& begin, const iter& end) noexcept
           : m_begin{begin}, m_end{end} {}
 
-        constexpr auto begin() const noexcept(std::is_nothrow_copy_constructible_v<iter>) -> iter {
-            return m_begin;
+        auto begin() const noexcept -> const iter& {
+            return m_begin.get();
         }
 
-        constexpr auto end() const noexcept(std::is_nothrow_copy_constructible_v<iter>) -> iter {
-            return m_end;
+        auto end() const noexcept -> const iter& {
+            return m_end.get();
         }
 
     private:
 
-        iter m_begin;
-        iter m_end;
+        std::reference_wrapper<const iter> m_begin;
+        std::reference_wrapper<const iter> m_end;
     };
-
-    template <typename iter>
-    range(iter, iter) -> range<iter>;
 }
 
 #endif
