@@ -9,17 +9,17 @@
 namespace ksr {
 
     /// Determines whether a constructor declared equivalently to
-    /// `template <typename arg_t> t(arg_t&&)` would match the copy or move constructor of `t` for a
-    /// specific instantiation by `arg_t`. May be used with `std::enable_if` to ensure that
+    /// `template <typename arg> t(arg&&)` would match the copy or move constructor of `t` for a
+    /// specific instantiation by `arg`. May be used with `std::enable_if` to ensure that
     /// universal constructors are not instantiated when they may interfere with these special
     /// constructors.
 
-    template <typename t, typename arg_t>
+    template <typename t, typename arg>
     struct matches_special_ctr : std::bool_constant<
-        std::is_base_of_v<t, std::decay_t<arg_t>>> {};
+        std::is_base_of_v<t, std::decay_t<arg>>> {};
 
-    template <typename t, typename arg_t>
-    inline constexpr auto matches_special_ctr_v = matches_special_ctr<t, arg_t>::value;
+    template <typename t, typename arg>
+    inline constexpr auto matches_special_ctr_v = matches_special_ctr<t, arg>::value;
 
     namespace detail {
 
@@ -44,6 +44,30 @@ namespace ksr {
     template <typename t>
     using underlying_type_ext_t = typename underlying_type_ext<t>::type;
 
+    namespace detail {
+
+        template <template <typename...> class trait, typename f, typename... args>
+        constexpr auto invoke_result_trait(meta::type_tag<f>, meta::type_tag<args>...) -> bool {
+
+            if constexpr (std::is_invocable_v<f, args...>) {
+                return trait<std::invoke_result_t<f, args...>>::value;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    /// SFINAE wrapper for `std::invoke_result` that returns the result of applying a unary boolean
+    /// type trait `trait` to `std::invoke_result_t<f, args...>` if that type exists, or else
+    /// returns `false`.
+
+    template <template <typename...> class trait, typename f, typename... args>
+    struct invoke_result_trait : std::bool_constant<
+        detail::invoke_result_trait(meta::type_tag<f>{}, meta::type_tag<args>{}...)> {};
+
+    template <template <typename...> class trait, typename f, typename... args>
+    inline constexpr auto invoke_result_trait_v = invoke_result_trait<trait, f, args...>::value;
+
     /// Determines whether the type `t` is arithmetic once transformed to any potentially underlying
     /// type as per `underlying_type_ext`. Crucially, this includes enumeration types
     /// as well as those that would normally be identified by `std::is_arithmetic`.
@@ -55,15 +79,15 @@ namespace ksr {
     template <typename t>
     inline constexpr auto is_numeric_v = is_numeric<t>::value;
 
-    /// Determines whether every type in `ts` is the same as `ref_t`, in the sense of
+    /// Determines whether every type in `ts` is the same as `ref`, in the sense of
     /// `std::is_same` (and may therefore be considered a variadic extension of that standard
     /// library trait).
 
-    template <typename ref_t, typename... ts>
-    using is_same = std::conjunction<std::is_same<ref_t, ts>...>;
+    template <typename ref, typename... ts>
+    using is_same = std::conjunction<std::is_same<ref, ts>...>;
 
-    template <typename ref_t, typename... ts>
-    inline constexpr auto is_same_v = is_same<ref_t, ts...>::value;
+    template <typename ref, typename... ts>
+    inline constexpr auto is_same_v = is_same<ref, ts...>::value;
 
     /// Gets the type of member pointed to by `mem_ptr`, where `mem_ptr` is a pointer to a member
     /// of any class type to the type of the member that it points to.
