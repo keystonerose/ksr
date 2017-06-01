@@ -46,11 +46,11 @@ namespace ksr {
 
     namespace detail {
 
-        template <template <typename...> class trait, typename f, typename... args>
-        constexpr auto invoke_result_trait(meta::type_tag<f>, meta::type_tag<args>...) -> bool {
+        template <template <typename...> class trait, typename fn, typename... args>
+        constexpr auto invoke_result_trait(meta::type_tag<fn>, meta::type_tag<args>...) -> bool {
 
-            if constexpr (std::is_invocable_v<f, args...>) {
-                return trait<std::invoke_result_t<f, args...>>::value;
+            if constexpr (std::is_invocable_v<fn, args...>) {
+                return trait<std::invoke_result_t<fn, args...>>::value;
             } else {
                 return false;
             }
@@ -58,15 +58,15 @@ namespace ksr {
     }
 
     /// SFINAE wrapper for `std::invoke_result` that returns the result of applying a unary boolean
-    /// type trait `trait` to `std::invoke_result_t<f, args...>` if that type exists, or else
+    /// type trait `trait` to `std::invoke_result_t<fn, args...>` if that type exists, or else
     /// returns `false`.
 
-    template <template <typename...> class trait, typename f, typename... args>
+    template <template <typename...> class trait, typename fn, typename... args>
     struct invoke_result_trait : std::bool_constant<
-        detail::invoke_result_trait(meta::type_tag<f>{}, meta::type_tag<args>{}...)> {};
+        detail::invoke_result_trait(meta::type_tag<fn>{}, meta::type_tag<args>{}...)> {};
 
-    template <template <typename...> class trait, typename f, typename... args>
-    inline constexpr auto invoke_result_trait_v = invoke_result_trait<trait, f, args...>::value;
+    template <template <typename...> class trait, typename fn, typename... args>
+    inline constexpr auto invoke_result_trait_v = invoke_result_trait<trait, fn, args...>::value;
 
     /// Determines whether the type `t` is arithmetic once transformed to any potentially underlying
     /// type as per `underlying_type_ext`. Crucially, this includes enumeration types

@@ -1,4 +1,4 @@
-#ifdef KSR_TRANSFORM_ITERATOR_HPP
+#ifndef KSR_TRANSFORM_ITERATOR_HPP
 #define KSR_TRANSFORM_ITERATOR_HPP
 
 #include "type_traits.hpp"
@@ -9,17 +9,23 @@
 
 namespace ksr {
 
-    template <typename f, typename it>
+    template <typename fn, typename it>
     using is_iterator_transformation =
-        invoke_result_trait_v<std::is_reference, f, std::iterator_traits<it>::reference>;
+        invoke_result_trait<std::is_reference, fn, typename std::iterator_traits<it>::reference>;
+
+    template <typename fn, typename it>
+    inline constexpr auto is_iterator_transformation_v = is_iterator_transformation<fn, it>::value;
 
     namespace detail {
 
-        template <typename category, typename it, typename f, typename>
+        template <typename category, typename it, typename fn, typename>
         class transform_iterator;
 
-        template <typename it, typename f, typename = std::enable_if_t<is_iterator_transformation<f, it>>
-        class transform_iterator<std::forward_iterator_tag, it, f> {
+        template <
+            typename it, typename fn,
+            typename = std::enable_if_t<is_iterator_transformation_v<fn, it>>
+        >
+        class transform_iterator<std::forward_iterator_tag, it, fn> {
         private:
 
             using underlying_traits = typename std::iterator_traits<it>;
@@ -79,10 +85,9 @@ namespace ksr {
     // reference-like proxy object of some kind.
     // TODO [transform_iterator]: Revisit this restriction?
 
-    template <typename it, typename f>
+    template <typename it, typename fn>
     using transform_iterator = detail::transform_iterator<
         it, typename std::iterator_traits<it>::iterator_category, f>;
 }
 
 #endif
-
