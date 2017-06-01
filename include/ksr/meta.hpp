@@ -75,6 +75,12 @@ namespace ksr { namespace meta {
         static constexpr auto tail = type_seq<tail_ts...>{};
     };
 
+    // TODO:HERE
+    template <template <typename...> class type_seq, typename head_t, typename... tail_ts>
+    constexpr auto head(type_seq<head_t, tail_ts...>) {
+        return type_tag<head_t, tail_t
+    }
+
     template <typename... ts>
     constexpr auto size(type_seq<ts...>) -> std::size_t {
         return sizeof...(ts);

@@ -1,6 +1,7 @@
 #ifndef KSR_FLAG_PRODUCT_HPP
 #define KSR_FLAG_PRODUCT_HPP
 
+#include "meta_type_traits.hpp"
 #include "type_util.hpp"
 
 #include <tuple>
@@ -45,8 +46,16 @@ public:
 
     }
 
-    template <typename rhs_flag_ts...> // TODO:requires rhs_flag_ts to be a subset of flag_ts
+    // TODO factor out the constraint
+    template <
+        typename lhs_t, typename rhs_t,
+        typename = std::enable_if_t<
+            is_type_inst_v<lhs_t, flag_product> &&
+            is_type_inst_v<rhs_t, flag_product> &&
+            std::conjunction<has_operator_bit_or<intersection(lhs_flags_t, rhs_flag_t)>...>
+    >
     friend constexpr auto operator|(const flag_product& lhs, const flag_product<rhs_flag_ts...>& rhs) {
+
 
     }
 
