@@ -1,4 +1,4 @@
-#include "ksr/transform_iterator.hpp"
+#include "ksr/proxy_iterator.hpp"
 
 #include "catch/catch.hpp"
 
@@ -24,7 +24,7 @@ namespace {
         static constexpr auto transform = [](auto&& value) { return *value.second; };
 
         template <typename it>
-        using transform_iterator = ksr::transform_iterator<it, decltype(transform)>;
+        using transform_iterator = ksr::proxy_iterator<it, decltype(transform)>;
 
     public:
 

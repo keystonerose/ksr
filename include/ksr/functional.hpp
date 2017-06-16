@@ -8,6 +8,29 @@
 
 namespace ksr {
 
+    /// Polymorphic function object that, when invoked, always returns `value`, regardless of what
+    /// arguments it is given. In particular, the predicates `always<true>` and `always<false>` are
+    /// useful as default template arguments to disable filtering.
+
+    template <auto value>
+    struct always {
+        template <typename... arg_ts>
+        constexpr auto operator()(arg_ts&&...) const noexcept {
+            return value;
+        }
+    };
+
+    /// Polymorphic function object that, when invoked, returns a reference of the appropriate
+    /// category to a single object passed as its argument. Useful as a default template argument to
+    /// disable a transformation.
+
+    struct identity {
+        template <typename t>
+        constexpr auto operator()(t&& val) const noexcept -> decltype(auto) {
+            return std::forward<t>(val);
+        }
+    };
+
     /// Function object adaptor that applies a default-constructed instance of `pred` to specified
     /// members of a particular class type.
     ///
@@ -38,22 +61,22 @@ namespace ksr {
     };
 
     template <auto mem_ptr>
-    using mem_equal_to = mem_pred<mem_ptr, std::equal_to<mem_type_t<mem_ptr>>>;
+    using mem_equal_to = mem_pred<mem_ptr, std::equal_to<>>;
 
     template <auto mem_ptr>
-    using mem_not_equal_to = mem_pred<mem_ptr, std::not_equal_to<mem_type_t<mem_ptr>>>;
+    using mem_not_equal_to = mem_pred<mem_ptr, std::not_equal_to<>>;
 
     template <auto mem_ptr>
-    using mem_greater = mem_pred<mem_ptr, std::greater<mem_type_t<mem_ptr>>>;
+    using mem_greater = mem_pred<mem_ptr, std::greater<>>;
 
     template <auto mem_ptr>
-    using mem_less = mem_pred<mem_ptr, std::less<mem_type_t<mem_ptr>>>;
+    using mem_less = mem_pred<mem_ptr, std::less<>>;
 
     template <auto mem_ptr>
-    using mem_greater_equal = mem_pred<mem_ptr, std::greater_equal<mem_type_t<mem_ptr>>>;
+    using mem_greater_equal = mem_pred<mem_ptr, std::greater_equal<>>;
 
     template <auto mem_ptr>
-    using mem_less_equal = mem_pred<mem_ptr, std::less_equal<mem_type_t<mem_ptr>>>;
+    using mem_less_equal = mem_pred<mem_ptr, std::less_equal<>>;
 
     /// Function object adaptor that applies a default-constructed instance of `pred` to a value
     /// that the `current_mem_pred` object was constructed and specified members of the arguments
@@ -99,22 +122,22 @@ namespace ksr {
     };
 
     template <auto mem_ptr>
-    using mem_is_equal_to = curried_mem_pred<mem_ptr, std::equal_to<mem_type_t<mem_ptr>>>;
+    using mem_is_equal_to = curried_mem_pred<mem_ptr, std::equal_to<>>;
 
     template <auto mem_ptr>
-    using mem_is_not_equal_to = curried_mem_pred<mem_ptr, std::not_equal_to<mem_type_t<mem_ptr>>>;
+    using mem_is_not_equal_to = curried_mem_pred<mem_ptr, std::not_equal_to<>>;
 
     template <auto mem_ptr>
-    using mem_is_greater = curried_mem_pred<mem_ptr, std::greater<mem_type_t<mem_ptr>>>;
+    using mem_is_greater = curried_mem_pred<mem_ptr, std::greater<>>;
 
     template <auto mem_ptr>
-    using mem_is_less = curried_mem_pred<mem_ptr, std::less<mem_type_t<mem_ptr>>>;
+    using mem_is_less = curried_mem_pred<mem_ptr, std::less<>>;
 
     template <auto mem_ptr>
-    using mem_is_greater_equal = curried_mem_pred<mem_ptr, std::greater_equal<mem_type_t<mem_ptr>>>;
+    using mem_is_greater_equal = curried_mem_pred<mem_ptr, std::greater_equal<>>;
 
     template <auto mem_ptr>
-    using mem_is_less_equal = curried_mem_pred<mem_ptr, std::less_equal<mem_type_t<mem_ptr>>>;
+    using mem_is_less_equal = curried_mem_pred<mem_ptr, std::less_equal<>>;
 }
 
 #endif
