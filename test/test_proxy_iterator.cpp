@@ -21,10 +21,11 @@ namespace {
     private:
 
         using item_container = std::map<int, std::unique_ptr<item>>;
+        static constexpr auto filter = [](auto&& value) { return (value != nullptr); };
         static constexpr auto transform = [](auto&& value) { return *value.second; };
 
         template <typename it>
-        using transform_iterator = ksr::proxy_iterator<it, decltype(transform)>;
+        using transform_iterator = ksr::proxy_iterator<it, decltype(transform), decltype(filter)>;
 
     public:
 
