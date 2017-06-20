@@ -21,7 +21,7 @@ namespace {
     private:
 
         using item_container = std::map<int, std::unique_ptr<item>>;
-        static constexpr auto filter = [](auto&& value) { return (value != nullptr); };
+        static constexpr auto filter = [](auto&& value) { return (value.second != nullptr); };
         static constexpr auto transform = [](auto&& value) { return *value.second; };
 
         template <typename it>
@@ -33,23 +33,23 @@ namespace {
         using const_iterator = transform_iterator<item_container::const_iterator>;
 
         auto begin() const {
-            return const_iterator{std::cbegin(m_items)};
+            return const_iterator{std::cbegin(m_items), std::cend(m_items)};
         }
 
         auto end() const {
-            return const_iterator{std::cend(m_items)};
+            return const_iterator{std::cend(m_items), std::cend(m_items)};
         }
 
         auto begin() {
-            return iterator{std::begin(m_items)};
+            return iterator{std::begin(m_items), std::end(m_items)};
         }
 
         auto end() {
-            return iterator{std::end(m_items)};
+            return iterator{std::end(m_items), std::end(m_items)};
         }
 
         item* emplace(const int key, const bool value) {
-            const auto [iter, success] = m_items.insert(key, std::make_unique<item>(key, value));
+            const auto [iter, success] = m_items.insert({key, std::make_unique<item>(key, value)});
             return success ? iter->second.get() : nullptr;
         }
 

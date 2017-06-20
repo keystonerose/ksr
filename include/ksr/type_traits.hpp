@@ -63,7 +63,7 @@ namespace ksr {
 
     template <template <typename...> class trait, typename fn, typename... args>
     struct invoke_result_trait : std::bool_constant<
-        detail::invoke_result_trait(meta::type_tag<fn>{}, meta::type_tag<args>{}...)> {};
+        detail::invoke_result_trait<trait>(meta::type_tag<fn>{}, meta::type_tag<args>{}...)> {};
 
     template <template <typename...> class trait, typename fn, typename... args>
     inline constexpr auto invoke_result_trait_v = invoke_result_trait<trait, fn, args...>::value;
