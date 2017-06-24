@@ -44,26 +44,15 @@ namespace ksr {
     template <typename t>
     using underlying_type_ext_t = typename underlying_type_ext<t>::type;
 
-    namespace detail {
-
-        template <template <typename...> class trait, typename fn, typename... args>
-        constexpr auto invoke_result_trait(meta::type_tag<fn>, meta::type_tag<args>...) -> bool {
-
-            if constexpr (std::is_invocable_v<fn, args...>) {
-                return trait<std::invoke_result_t<fn, args...>>::value;
-            } else {
-                return false;
-            }
-        }
-    }
-
     /// SFINAE wrapper for `std::invoke_result` that returns the result of applying a unary boolean
     /// type trait `trait` to `std::invoke_result_t<fn, args...>` if that type exists, or else
     /// returns `false`.
 
     template <template <typename...> class trait, typename fn, typename... args>
-    struct invoke_result_trait : std::bool_constant<
-        detail::invoke_result_trait<trait>(meta::type_tag<fn>{}, meta::type_tag<args>{}...)> {};
+    using invoke_result_trait =
+        std::conditional_t<std::is_invocable_v<fn, args...>,
+            trait<std::invoke_result_t<fn, args...>>,
+            std::false_type>;
 
     template <template <typename...> class trait, typename fn, typename... args>
     inline constexpr auto invoke_result_trait_v = invoke_result_trait<trait, fn, args...>::value;

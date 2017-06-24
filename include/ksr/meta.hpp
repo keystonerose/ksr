@@ -8,31 +8,11 @@
 
 namespace ksr { namespace meta {
 
-    /// `type_tag` and `value_tag` wrap single types or integral constants, respectively, in objects
-    /// that facilitate the deduction of corresponding template parameters and can be both be passed
-    /// to or returned from `constexpr` functions. The **kind** of such a tag object designates
-    /// whether it wraps a type or a value.
-
-    /// Tags a single type `t`, which can later be retrieved from the `type_tag` object using
-    /// `decltype` and the `type` member type.
-
-    template <typename t>
-    struct type_tag {
-        using type = t;
-    };
-
-    /// Determines whether two `type_tag` objects represent the same type, in the sense of
-    /// `std::is_same`.
-
-    template <typename lhs_t, typename rhs_t>
-    constexpr auto operator==(type_tag<lhs_t>, type_tag<rhs_t>) -> bool {
-        return std::is_same_v<lhs_t, rhs_t>;
-    }
-
-    template <typename lhs_t, typename rhs_t>
-    constexpr auto operator!=(const type_tag<lhs_t> lhs, const type_tag<rhs_t> rhs) -> bool {
-        return !(lhs == rhs);
-    }
+    /// `value_tag`, `type_tag` and `func_tag` wrap integral constants, types, or type-functions
+    /// (i.e. class templates), respectively, in objects that facilitate the deduction of
+    /// corresponding template parameters and can be both be passed to or returned from `constexpr`
+    /// functions. The **kind** of such a tag object designates whether it wraps a value, type or
+    /// type-function.
 
     /// Tags an integral constant value `v`, which can later be retrieved via the `value` member.
     /// While integral constants can of course be managed more naturally without the tagging
@@ -55,40 +35,59 @@ namespace ksr { namespace meta {
         return !(lhs == rhs);
     }
 
-    /// `type_seq` and `value_seq are sequence counterparts of `type_tag` and `value_tag`: each
-    /// wraps a pack of arbitrary types or integral constants and provides operations for processing
-    /// that pack in terms of tag objects of the corresponding kind. Sequence objects that tag
-    /// non-empty packs are typically processed by splitting into a head (which is a tagged type or
-    /// or value) and a tail (which is another sequence, and may be empty) via the `head` and `tail`
-    /// members. These components are available only when the pack is non-empty; whether or not this
-    /// is the case can be determined via the nonmember `empty()` predicate.
+    /// Tags a single type `t`, which can later be retrieved from the `type_tag` object via the
+    /// `type` member type. `type_tag` objects are considered identical when they represent types
+    /// that themselves satisfy the `std::is_same` trait.
 
-    template <typename...>
-    struct type_seq;
-
-    template <>
-    struct type_seq<> {};
-
-    template <typename head_t, typename... tail_ts>
-    struct type_seq<head_t, tail_ts...> {
-        static constexpr auto head = type_tag<head_t>{};
-        static constexpr auto tail = type_seq<tail_ts...>{};
+    template <typename t>
+    struct type_tag {
+        using type = t;
     };
 
-    template <typename... ts>
-    constexpr auto size(type_seq<ts...>) -> std::size_t {
-        return sizeof...(ts);
+    template <typename lhs_t, typename rhs_t>
+    constexpr auto operator==(type_tag<lhs_t>, type_tag<rhs_t>) -> bool {
+        return std::is_same_v<lhs_t, rhs_t>;
     }
 
-    template <typename item_t, typename... seq_ts>
-    constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t> = {}) {
-        return type_seq<seq_ts..., item_t>{};
+    template <typename lhs_t, typename rhs_t>
+    constexpr auto operator!=(const type_tag<lhs_t> lhs, const type_tag<rhs_t> rhs) -> bool {
+        return !(lhs == rhs);
     }
 
-    template <typename item_t, typename... seq_ts>
-    constexpr auto push_front(type_seq<seq_ts...>, type_tag<item_t> = {}) {
-        return type_seq<item_t, seq_ts...>{};
+    /// Tags a single template class with type arguments `f`, which can later be retrieved from the
+    /// `func_tag` object via the `func` member template. `func_tag` objects are considered
+    /// identical when they represent the same class template, as if by an extension of
+    /// `std::is_same` to templates rather than types.
+
+    template <template <typename...> class f>
+    struct func_tag {
+        template <typename... args>
+        using func = f<args...>;
+    };
+
+    template <template <typename...> class f>
+    constexpr auto operator==(func_tag<f>, func_tag<f>) -> bool {
+        return true;
     }
+
+    template <template <typename...> class lhs_f, template <typename...> class rhs_f>
+    constexpr auto operator==(func_tag<lhs_f>, func_tag<rhs_f>) -> bool {
+        return false;
+    }
+
+    template <template <typename...> class lhs_f, template <typename...> class rhs_f>
+    constexpr auto operator!=(const func_tag<lhs_f> lhs, const func_tag<rhs_f> rhs) -> bool {
+        return !(lhs == rhs);
+    }
+
+    /// `value_seq`, `type_seq` and `func_seq` are sequence counterparts of `type_tag`, `value_tag`
+    /// and `func_tag`: each wraps a pack of arbitrary integral constants, types or type-functions,
+    /// and provides operations for processing that pack in terms of tag objects of the
+    /// corresponding kind. Sequence objects that tag non-empty packs are typically processed by
+    /// splitting into a head (which is a tagged value, type or type-function) and a tail (which is
+    /// another sequence, and may be empty) via the `head` and `tail` members. These components are
+    /// available only when the pack is non-empty; whether or not this is the case may be determined
+    /// via the nonmember `empty()` predicate.
 
     template <auto...>
     struct value_seq;
@@ -117,6 +116,60 @@ namespace ksr { namespace meta {
         return value_seq<item_v, seq_vs...>{};
     }
 
+    template <typename...>
+    struct type_seq;
+
+    template <>
+    struct type_seq<> {};
+
+    template <typename head_t, typename... tail_ts>
+    struct type_seq<head_t, tail_ts...> {
+        static constexpr auto head = type_tag<head_t>{};
+        static constexpr auto tail = type_seq<tail_ts...>{};
+    };
+
+    template <typename... ts>
+    constexpr auto size(type_seq<ts...>) -> std::size_t {
+        return sizeof...(ts);
+    }
+
+    template <typename item_t, typename... seq_ts>
+    constexpr auto push_back(type_seq<seq_ts...>, type_tag<item_t> = {}) {
+        return type_seq<seq_ts..., item_t>{};
+    }
+
+    template <typename item_t, typename... seq_ts>
+    constexpr auto push_front(type_seq<seq_ts...>, type_tag<item_t> = {}) {
+        return type_seq<item_t, seq_ts...>{};
+    }
+
+    template <template <typename...> class...>
+    struct func_seq;
+
+    template <>
+    struct func_seq<> {};
+
+    template <template <typename...> class head_f, template <typename...> class... tail_fs>
+    struct func_seq<head_f, tail_fs...> {
+        static constexpr auto head = func_tag<head_f>{};
+        static constexpr auto tail = func_seq<tail_fs...>{};
+    };
+
+    template <template <typename...> class... fs>
+    constexpr auto size(func_seq<fs...>) -> std::size_t {
+        return sizeof...(fs);
+    }
+
+    template <template <typename...> class item_f, template <typename...> class... seq_fs>
+    constexpr auto push_back(func_seq<seq_fs...>, func_tag<item_f> = {}) {
+        return func_seq<seq_fs..., item_f>{};
+    }
+
+    template <template <typename...> class item_f, template <typename...> class... seq_fs>
+    constexpr auto push_front(func_seq<seq_fs...>, func_tag<item_f> = {}) {
+        return func_seq<item_f, seq_fs...>{};
+    }
+
     /// Trait used to constrain templates that operate upon the sequence types defined in
     /// `ksr::meta`. Evaluates to `std::true_type` if every type in `ts` is a `type_seq`
     /// instantiation or every type in `ts` is a `value_seq` instantiation, or to `std::false_type`
@@ -130,28 +183,41 @@ namespace ksr { namespace meta {
     template <typename... ts>
     inline constexpr auto is_seq_v = is_seq<ts...>::value;
 
-    /// Instantiates a specified template `op` that takes either type or non-type parameters using
-    /// the corresponding elements of the sequence `seq`. The resulting type may be obtained via
-    /// `decltype`; no function definition is provided, nor would it be possible to implement.
+    /// Instantiates a specified template `func` that takes either type or non-type parameters using
+    /// the corresponding elements of the sequence `seq`.
 
-    template <template <typename...> class op, typename... ts>
-    auto apply_to(type_seq<ts...>) -> op<ts...>;
-
-    template <template <auto...> class op, auto... vs>
-    auto apply_to(value_seq<vs...>) -> op<vs...>;
-
-    /// Instantiates a specified template `op` taking a single type or non-type template parameter
-    /// for each corresponding element of the sequence `seq`, returning a `type_seq` object tagging
-    /// the sequence of `op` instantiations.
-
-    template <template <typename> class op, typename... ts>
-    constexpr auto transform_by(type_seq<ts...>) {
-        return type_seq<op<ts>...>{};
+    template <template <typename...> class func, typename... ts>
+    constexpr auto apply(type_seq<ts...>) {
+        return type_tag<func<ts...>>{};
     }
 
-    template <template <auto> class op, auto... vs>
+    template <template <auto...> class func, auto... vs>
+    constexpr auto apply(value_seq<vs...>) {
+        return type_tag<func<vs...>>{};
+    }
+
+    // TODO:DOC
+
+    template <template <typename...> class funcs_head, template <typename...> class... funcs_tail>
+    auto invoke(type_seq
+
+    struct invoke {
+        template <typename... args>
+        using type = head<typename compose<tail...>::template func<args...>>;
+    };
+
+    /// Instantiates a specified template `func` taking a single type or non-type template parameter
+    /// for each corresponding element of the sequence `seq`, returning a `type_seq` object tagging
+    /// the sequence of `func` instantiations.
+
+    template <template <typename> class func, typename... ts>
+    constexpr auto transform_by(type_seq<ts...>) {
+        return type_seq<func<ts>...>{};
+    }
+
+    template <template <auto> class func, auto... vs>
     constexpr auto transform_by(value_seq<vs...>) {
-        return type_seq<op<vs>...>{};
+        return type_seq<func<vs>...>{};
     }
 
     /// Determines whether `seq` is an empty sequence. Nonempty sequences provide `head` and `tail`
