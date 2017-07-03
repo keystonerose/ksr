@@ -1,8 +1,7 @@
 #ifndef KSR_TYPE_TRAITS_HPP
 #define KSR_TYPE_TRAITS_HPP
 
-#include "meta.hpp"
-#include "meta_type_traits.hpp"
+#include "meta_tag.hpp"
 
 #include <type_traits>
 
