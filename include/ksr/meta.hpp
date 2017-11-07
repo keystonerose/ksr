@@ -33,6 +33,11 @@ namespace ksr { namespace meta {
         return type_tag<func<vs...>>{};
     }
 
+    template <typename func_tag_t, typename arg_seq_t>
+    constexpr auto invoke(func_tag_t, arg_seq_t) {
+
+    }
+
     // TODO:DOC
     // TODO:HERE
 
